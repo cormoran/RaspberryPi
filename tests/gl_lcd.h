@@ -63,18 +63,18 @@ extern "C" {
 typedef unsigned char uchar;
 
 extern  void init_glcd(void);
-extern  void Sendbytes_glcd(char cmd,uchar data[],uchar len);
+extern  void Sendbytes_glcd(char cmd,uchar *data,uchar len);
 extern  void Sendbyte_glcd(char cmd,uchar data);
 
-extern  void Draw_rectangle_glcd_x(uchar x,uchar y,uchar w,uchar h,uchar colors[3]);
+extern  void Draw_rectangle_glcd_x(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
 
-extern  void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar color);
-extern  void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye,uchar w, uchar color);
-extern  void Draw_cycle_glcd(uchar x0,uchar y0,uchar r,uchar w,uchar color);
-extern  void Draw_eclipse(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar color);
+extern  void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
+extern  void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye,uchar w, uchar *rgb);
+extern  void Draw_cycle_glcd(uchar x0,uchar y0,uchar r,uchar w,uchar *rgb);
+extern  void Draw_eclipse(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar *rgb);
 extern  void Reset_H_glcd(void);
-extern  void Draw_chara_glcd(uchar x,uchar y,char chara,uchar fontcolor,uchar backcolor);
-extern  void Draw_string_glcd(uchar x,uchar y,char *str,uchar fontcolor,uchar backcolor);
+extern  void Draw_chara_glcd(uchar x,uchar y,char chara,uchar *fontrgb,uchar backrgb);
+extern  void Draw_string_glcd(uchar x,uchar y,char *str,uchar *fontrgb,uchar backrgb);
 
 #ifdef __cplusplus
 }

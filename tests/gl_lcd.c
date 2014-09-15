@@ -268,8 +268,13 @@ void Sendbyte_glcd(char cmd,uchar data){
   bcm2835_gpio_write(DC, cmd&0x01);
   bcm2835_spi_transfer(data);
 }
+void Sendbytes_glcd(char cmd,uchar *data,uchar len)
+{
+  bcm2835_gpio_write(DC,cmd&0x01);
+  bcm2835_spi_writenb(data,len);
+}
 
-void Draw_rectangle_glcd_x(uchar x,uchar y,uchar w,uchar h,uchar rgb[3])
+void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar *rgb)
 {
   uchar i,j;
   SET_PAGE_ADDRESS_glcd(y,y+h-1);
@@ -284,26 +289,10 @@ void Draw_rectangle_glcd_x(uchar x,uchar y,uchar w,uchar h,uchar rgb[3])
       }
 }
 
-
-void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar color)
-{
-  uchar i,j;
-  SET_PAGE_ADDRESS_glcd(y,y+h-1);
-  SET_COLUMN_ADDRESS_glcd(x,x+w-1);
-  WRITE_MEMORY_START_glcd;
-  for(i = 0; i <h; i++)
-    for(j=0;j<w;j++)
-      {
-	Sendbyte_glcd(1, colors_glcd[color][0]);
-	Sendbyte_glcd(1, colors_glcd[color][1]);
-	Sendbyte_glcd(1, colors_glcd[color][2]);
-      }
-}
-
 /*直線描写関数
  * (xs,ys)から(xe,ye)まで太さwで色colorの直線を引く
  */
-void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye, uchar w, uchar color)
+void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye, uchar w, uchar *rgb)
 {
   //Bresenhamで直線描写
   uchar dx,dy;
@@ -328,7 +317,7 @@ void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye, uchar w, uchar color)
   slope=dx-dy;
 
   while(1){
-    Draw_rectangle_glcd(xs,ys,w,w,color);
+    Draw_rectangle_glcd(xs,ys,w,w,rgb);
     if(xs==xe && ys==ye)break;
     if(slope*2>-dy){
       slope-=dy;
@@ -343,21 +332,21 @@ void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye, uchar w, uchar color)
   return;
 }
 
-void Draw_cycle_glcd(uchar x0,uchar y0,uchar r,uchar w,uchar color)
+void Draw_cycle_glcd(uchar x0,uchar y0,uchar r,uchar w,uchar *rgb)
 {
   uchar i;
   uchar x = r;
   uchar y = 0;
   int F = -2 * r + 3;
   while ( x >= y ) {
-    Draw_rectangle_glcd( x0 + x, y0 + y,w,w, color );
-    Draw_rectangle_glcd( x0 - x, y0 + y,w,w, color );
-    Draw_rectangle_glcd( x0 + x, y0 - y,w,w, color );
-    Draw_rectangle_glcd( x0 - x, y0 - y,w,w, color );
-    Draw_rectangle_glcd( x0 + y, y0 + x,w,w, color );
-    Draw_rectangle_glcd( x0 - y, y0 + x,w,w, color );
-    Draw_rectangle_glcd( x0 + y, y0 - x,w,w, color );
-    Draw_rectangle_glcd( x0 - y, y0 - x,w,w, color );
+    Draw_rectangle_glcd( x0 + x, y0 + y,w,w, rgb );
+    Draw_rectangle_glcd( x0 - x, y0 + y,w,w, rgb );
+    Draw_rectangle_glcd( x0 + x, y0 - y,w,w, rgb );
+    Draw_rectangle_glcd( x0 - x, y0 - y,w,w, rgb );
+    Draw_rectangle_glcd( x0 + y, y0 + x,w,w, rgb );
+    Draw_rectangle_glcd( x0 - y, y0 + x,w,w, rgb );
+    Draw_rectangle_glcd( x0 + y, y0 - x,w,w, rgb );
+    Draw_rectangle_glcd( x0 - y, y0 - x,w,w, rgb );
     if(F>=0){
       x--;
       F -= 4 * x;
@@ -367,7 +356,7 @@ void Draw_cycle_glcd(uchar x0,uchar y0,uchar r,uchar w,uchar color)
   }
 }
 
-void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar color)
+void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar *rgb)
 {
   uchar x = (int)( (double)r / sqrt( (double)a ) );
   int y = 0;
@@ -376,10 +365,10 @@ void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar c
   int H = (int)( -4.0 * d ) + 2 * a     + b;
 
   while (1) {
-    Draw_rectangle_glcd( x0 + x, y0 + y,w,w, color );
-    Draw_rectangle_glcd( x0 - x, y0 + y,w,w, color );
-    Draw_rectangle_glcd( x0 + x, y0 - y,w,w, color );
-    Draw_rectangle_glcd( x0 - x, y0 - y,w,w, color );
+    Draw_rectangle_glcd( x0 + x, y0 + y,w,w, rgb );
+    Draw_rectangle_glcd( x0 - x, y0 + y,w,w, rgb );
+    Draw_rectangle_glcd( x0 + x, y0 - y,w,w, rgb );
+    Draw_rectangle_glcd( x0 - x, y0 - y,w,w, rgb );
 
     if(!x)break;
 
@@ -397,7 +386,7 @@ void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar c
 }
   
 
-void Draw_chara_glcd(uchar x,uchar y,char chara,uchar fontcolor,uchar backcolor)
+void Draw_chara_glcd(uchar x,uchar y,char chara,uchar *fontrgb,uchar *backrgb)
 {
   char charanum=chara-' ';
   char i,j;
@@ -410,24 +399,24 @@ void Draw_chara_glcd(uchar x,uchar y,char chara,uchar fontcolor,uchar backcolor)
       for(j=0;j<8;j++)
         {
 	  if(fline & 0x01){
-	    Sendbyte_glcd(1, colors_glcd[fontcolor][0]);
-	    Sendbyte_glcd(1, colors_glcd[fontcolor][1]);
-	    Sendbyte_glcd(1, colors_glcd[fontcolor][2]);
+	    Sendbyte_glcd(1, fontrgb[0]);
+	    Sendbyte_glcd(1, fontrgb[1]);
+	    Sendbyte_glcd(1, fontrgb[2]);
 	  }
 	  else{
-	    Sendbyte_glcd(1, colors_glcd[backcolor][0]);
-	    Sendbyte_glcd(1, colors_glcd[backcolor][1]);
-	    Sendbyte_glcd(1, colors_glcd[backcolor][2]);
+	    Sendbyte_glcd(1, backrgb[0]);
+	    Sendbyte_glcd(1, backrgb[1]);
+	    Sendbyte_glcd(1, backrgb[2]);
 	  }
 	  fline=fline>>1;
         }
     }
 }
 
-void Draw_string_glcd(uchar x,uchar y,char *str,uchar fontcolor,uchar backcolor)
+void Draw_string_glcd(uchar x,uchar y,char *str,uchar *fontrgb,uchar *backrgb)
 {
   while(*str){
-    Draw_chara_glcd(x,y,*str++,fontcolor,backcolor);
+    Draw_chara_glcd(x,y,*str++,fontrgb,backrgb);
     y+=6;
   }
 
