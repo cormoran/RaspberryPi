@@ -63,7 +63,7 @@ void init_glcd(){
 
 
 
-  Draw_rectangle_glcd(0, 0, 129,129, colors_glcd[BLACK_glcd]);
+  //  Draw_rectangle_glcd(0, 0, 129,129, colors_glcd[BLACK_glcd]);
  
 }
 
@@ -72,7 +72,7 @@ void Sendbyte_glcd(char cmd,uchar data){
   bcm2835_gpio_write(DC, cmd&0x01);
   bcm2835_spi_transfer(data);
 }
-void Sendbytes_glcd(char cmd,uchar *data,uchar len)
+void Sendbytes_glcd(char cmd,uchar *data,unsigned int len)
 {
   bcm2835_gpio_write(DC,cmd&0x01);
   bcm2835_spi_writenb(data,len);
@@ -80,7 +80,7 @@ void Sendbytes_glcd(char cmd,uchar *data,uchar len)
 
 
 
-void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar *rgb)
+void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h, uchar *rgb)
 {
   uchar i,j;
   SET_PAGE_ADDRESS_glcd(y,y+h-1);
@@ -98,7 +98,7 @@ void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar *rgb)
 /*直線描写関数
  * (xs,ys)から(xe,ye)まで太さwで色colorの直線を引く
  */
-void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye, uchar w, uchar *rgb)
+void Draw_line_glcd(uchar xs,uchar ys,uchar xe,uchar ye, uchar w,uchar *rgb)
 {
   //Bresenhamで直線描写
   uchar dx,dy;
@@ -162,7 +162,7 @@ void Draw_cycle_glcd(uchar x0,uchar y0,uchar r,uchar w,uchar *rgb)
   }
 }
 
-void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar *rgb)
+void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w, uchar *rgb)
 {
   uchar x = (int)( (double)r / sqrt( (double)a ) );
   int y = 0;
@@ -192,7 +192,7 @@ void Draw_eclipse_glcd(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar *
 }
   
 
-void Draw_chara_glcd(uchar x,uchar y,char chara,uchar *fontrgb,uchar *backrgb)
+void Draw_chara_glcd(uchar x,uchar y,char chara,uchar *fontrgb, uchar *backrgb)
 {
   char charanum=chara-' ';
   char i,j;

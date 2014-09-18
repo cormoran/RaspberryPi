@@ -1,0 +1,3 @@
+説明　receiverを起動しておく、writerに引数を与えるとそれが共有メモリに書き込まれてreceiverがそれを見る
+
+endを送るとreceiverが終了する。

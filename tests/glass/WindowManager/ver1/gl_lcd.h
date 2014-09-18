@@ -67,7 +67,7 @@ extern "C" {
 typedef unsigned char uchar;
 
 extern  void init_glcd(void);
-extern  void Sendbytes_glcd(char cmd,uchar *data,uchar len);
+extern  void Sendbytes_glcd(char cmd,uchar *data,unsigned int len);
 extern  void Sendbyte_glcd(char cmd,uchar data);
 
 extern  void Draw_rectangle_glcd(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
