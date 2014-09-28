@@ -52,6 +52,8 @@ void fb_init (int *width, int *height)
     printf("error: cannot map /dev/mem on the memory (FB::init)\n");
     exit(-1);
   }
+
+  close(fd);
 }
 //  fb_get: フレームバッファの内容を取得する
 unsigned char *getFrame ()

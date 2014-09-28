@@ -16,8 +16,9 @@ int init(){
   //GPIO Init
   if(!bcm2835_init()){
     printf("cannot open bcm");
-    return 1;
+    exit(1);
   }
+
   init_glcd();
 
   int w=128,h=128;
@@ -37,10 +38,10 @@ void SendWindow(){
 }
 
 char* setShareMemory(){
-  key_t key = ftok("LCDManager",1);
+  key_t key = ftok("WindowManager",1);
 
   char *adr;
-  id = shmget(key, 8, IPC_CREAT|0666);//8byte確保
+  id = shmget(key, 8, IPC_CREAT|/*IPC_EXCL|*/0666);//8byte確保
   if(id == -1){perror("shmget error");exit(-1);}
   adr = (char *)shmat(id, NULL, 0);
   if(adr == (void *)-1){
@@ -60,7 +61,7 @@ int main(int argc,int **argv)
   adr=setShareMemory();
   
   while(1){
-    if(!*adr)SendWindow();
+    if(!(*adr))SendWindow();//共有メモリの1byte目が0ならフレームバッファ送る
     else if (strcmp(adr, "end") == 0) {
       break;
     }
