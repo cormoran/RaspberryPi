@@ -1,12 +1,18 @@
 typedef unsigned char uchar;
 
 #include"gl_lcd.h"
-#include<math.h>
+#include<cmath>
 #include<bcm2835.h>
 #include<cstdio>
 #include<cstdlib>
+#include<sys/ipc.h>
+#include<sys/shm.h>
+#include<unistd.h>
 
 namespace gl_lcd{
+
+  unsigned int M014C9163SPI::WINDOWPX_W=128;
+  unsigned int M014C9163SPI::WINDOWPX_H=128;
 
   void M014C9163SPI::SPI_init(){
     bcm2835_spi_begin();
@@ -71,6 +77,21 @@ namespace gl_lcd{
     if(!bcm2835_close)perror("bcm2835_close error");
   }
 
+  char* setShareMemory(){
+    key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
+    
+    char *adr;
+    id = shmget(key, 8, IPC_CREAT|/*IPC_EXCL|*/0666);//8byte確保
+    if(id == -1){perror("shmget error");exit(-1);}
+    adr = (char *)shmat(id, NULL, 0);
+    if(adr == (void *)-1){
+      perror("shmat error");
+      if(shmctl(id, IPC_RMID, 0)==-1){perror("shmctl error");exit(EXIT_FAILURE);}
+    }
+    memset(adr,0,8);//メモリ初期化
+    return adr;
+  }
+  
   void M014C9163SPI::Sendbyte(char cmd,uchar data){
     bcm2835_gpio_write(DC, cmd&0x01);
     bcm2835_spi_transfer(data);
@@ -81,8 +102,14 @@ namespace gl_lcd{
     bcm2835_spi_writenb(data,len);
   }
 
-
-
+  void M014C9163SPI::SendFrame(char *buf,uchar len)
+  {
+    SET_PIXEL_FORMAT(0b01010101);//RGB565モードにする
+    glcd.SET_PAGE_ADDRESS(0,WINDOWPX_H-1);
+    glcd.SET_COLUMN_ADDRESS(0,WINDOWPX_W-1);
+    glcd.WRITE_MEMORY_START();
+    glcd.Sendbytes(1,buf,len);
+  }
   void M014C9163SPI::Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb)
   {
     uchar i,j;

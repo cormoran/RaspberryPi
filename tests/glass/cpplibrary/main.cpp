@@ -23,16 +23,8 @@ int main(int argc,char **argv)
 
   gl_lcd::M014C9163SPI glcd;
   gl_lcd::framebuffer fb;
-  char *buf;
-  glcd.SET_PIXEL_FORMAT((uchar)0b01010101);
   while(1){
-      glcd.SET_PAGE_ADDRESS(0,128-1);
-      glcd.SET_COLUMN_ADDRESS(0,128-1);
-      glcd.WRITE_MEMORY_START();
-      buf=fb.GetFrameAddress();
-      glcd.Sendbytes(1,buf,128*128*2);
-
+      glcd.SendFrame(fb.GetFrameAddress(),128*128*2);
       delay(10);
-
   }
 }

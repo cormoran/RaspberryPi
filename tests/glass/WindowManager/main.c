@@ -10,8 +10,7 @@
 #include<unistd.h>
 #define rep(i,j) for(i=0;i<j;i++)
 
-  int  id;
-
+int  id;
 int init(){
   //GPIO Init
   if(!bcm2835_init()){
@@ -38,7 +37,7 @@ void SendWindow(){
 }
 
 char* setShareMemory(){
-  key_t key = ftok("WindowManager",1);
+  key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
 
   char *adr;
   id = shmget(key, 8, IPC_CREAT|/*IPC_EXCL|*/0666);//8byte確保

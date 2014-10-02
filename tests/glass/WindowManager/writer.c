@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
   int   id;
   char  *adr;
-  key_t key =0xffffffff;//ftok("WindowManager",1);
+  key_t key =ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);//0xffffffff;//ftok("WindowManager",1);
 
   id = shmget(key,8,0);
   if(id==-1){perror("shmget error ");exit(-1);}

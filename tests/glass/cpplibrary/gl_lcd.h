@@ -9,6 +9,7 @@
 #define CS RPI_BPLUS_GPIO_J8_24
 #define RST RPI_BPLUS_GPIO_J8_22
 
+
 typedef unsigned char uchar;
 
 namespace gl_lcd{
@@ -24,6 +25,9 @@ namespace gl_lcd{
 
     enum colors{BLACK,RED,PINK,PURPLE,MAGENTA,BLUE,MCYAN,GREEN,LIME,YELLOW,ORANGLE,GRAY,WHITE};
 
+    unsigned int WINDOWPX_W;
+    unsigned int WINDOWPX_H;
+
 
     M014C9163SPI(){
       init();
@@ -35,6 +39,8 @@ namespace gl_lcd{
 
     void Sendbytes(char cmd,char *data,unsigned int len);
     void Sendbyte(char cmd,uchar data);
+    
+    void SendFrame(char *buf,unsiged int len);
 
     void Draw_rectangle(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
     void Draw_line(uchar xs,uchar ys,uchar xe,uchar ye,uchar w, uchar *rgb);
