@@ -11,8 +11,16 @@ typedef unsigned char uchar;
 
 namespace gl_lcd{
 
-  unsigned int M014C9163SPI::WINDOWPX_W=128;
-  unsigned int M014C9163SPI::WINDOWPX_H=128;
+  M014C9163SPI::M014C9163SPI(char AppMode){
+    //Is_inited=false;
+    init();
+    //ShareMemInit(AppMode);
+    //Is_inited=true;
+  }
+  ~M014C9163SPI(){
+    //何か？
+  }
+
 
   void M014C9163SPI::SPI_init(){
     bcm2835_spi_begin();
@@ -33,8 +41,8 @@ namespace gl_lcd{
     bcm2835_gpio_write(RST,HIGH);
     bcm2835_gpio_write(DC,LOW);
   }
-
   void M014C9163SPI::init(){
+
     GPIO_init();
     SPI_init();
     delay(120);
@@ -75,23 +83,8 @@ namespace gl_lcd{
   void M014C9163SPI::end(){
     bcm2835_spi_end();
     if(!bcm2835_close)perror("bcm2835_close error");
-  }
+  }  
 
-  char* setShareMemory(){
-    key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
-    
-    char *adr;
-    id = shmget(key, 8, IPC_CREAT|/*IPC_EXCL|*/0666);//8byte確保
-    if(id == -1){perror("shmget error");exit(-1);}
-    adr = (char *)shmat(id, NULL, 0);
-    if(adr == (void *)-1){
-      perror("shmat error");
-      if(shmctl(id, IPC_RMID, 0)==-1){perror("shmctl error");exit(EXIT_FAILURE);}
-    }
-    memset(adr,0,8);//メモリ初期化
-    return adr;
-  }
-  
   void M014C9163SPI::Sendbyte(char cmd,uchar data){
     bcm2835_gpio_write(DC, cmd&0x01);
     bcm2835_spi_transfer(data);
@@ -255,63 +248,6 @@ namespace gl_lcd{
       Draw_chara(x,y,*str++,fontrgb,backrgb);
       y+=6;
     }
-  }
-
-
-  void M014C9163SPI::charatest(){
-
-    return;
-
-  }
-
-#include<stdio.h>
-
-  void M014C9163SPI::Show_rawimage(char *path,uchar w,uchar h)
-  {
-    FILE *fp;
-    uchar c;
-
-    fp = fopen(path, "rb" );
-    if( fp == NULL ){
-      printf( "%sファイルが開けません¥n", path);
-      return ;
-    }
-
-
-    uchar i,j,k,l;
-    SET_PAGE_ADDRESS(0,h-1);
-    SET_COLUMN_ADDRESS(0,w-1);
-    WRITE_MEMORY_START();
-    k=0;
-    fread(&c,sizeof(uchar),1,fp);
-    for(i=0;i<h;i++)
-      {
-	for(j=0;j<w;j++)
-	  {
-	    for(l=0;l<3;l++){
-	      if(++k==8)
-		{
-		  k=0;
-		  if(!fread(&c,sizeof(uchar),1,fp))goto END;
-		} 
-	      Sendbyte(1, c&0x80);  
-	      c=c<<1;
-	    }
-	  }
-      }
-  END:
-    fclose( fp );
-    /*
-      SET_PAGE_ADDRESS(3,10);
-      SET_COLUMN_ADDRESS(0,127);
-      WRITE_MEMORY_START;
-      for(i=0;i<10;i++)
-      {
-      for(j=0;j<128;j++)
-      Sendbyte(1,255);
-      }
-    */
-    return ;
   }
 
   /**/ bool M014C9163SPI::NOP(){

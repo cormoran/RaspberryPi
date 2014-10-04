@@ -21,26 +21,27 @@ namespace gl_lcd{
     void GPIO_init();
     void init();
     void end();
+    //void ShareMemInit(char AppMode);
+    //char setShareMemory();
+    //char getShareMemory();
+
+    //char *ShareMemoryAddress;
+    //char MyWindwID;
+    //bool Is_inited;
   public:
-
+    
     enum colors{BLACK,RED,PINK,PURPLE,MAGENTA,BLUE,MCYAN,GREEN,LIME,YELLOW,ORANGLE,GRAY,WHITE};
+    enum Mode{Master,Slave};
 
-    unsigned int WINDOWPX_W;
-    unsigned int WINDOWPX_H;
+    constexpr int WINDOWPX_W=128,WINDOWPX_H=128;
 
-
-    M014C9163SPI(){
-      init();
-    }
-    ~M014C9163SPI(){
-      //他が使ってなければ終わるべし
-      //end();
-    }
+    M014C9163SPI(char AppMode);
+    ~M014C9163SPI();
 
     void Sendbytes(char cmd,char *data,unsigned int len);
     void Sendbyte(char cmd,uchar data);
     
-    void SendFrame(char *buf,unsiged int len);
+    void SendFrame(char *buf,unsigned int len);
 
     void Draw_rectangle(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
     void Draw_line(uchar xs,uchar ys,uchar xe,uchar ye,uchar w, uchar *rgb);
@@ -49,9 +50,6 @@ namespace gl_lcd{
     void Reset_H(void);
     void Draw_chara(uchar x,uchar y,char chara,uchar *fontrgb,uchar *backrgb);
     void Draw_string(uchar x,uchar y,char *str,uchar *fontrgb,uchar *backrgb);
-
-    void charatest();
-    void Show_rawimage(char *path,unsigned char w,unsigned char h);
 
 
     /**/ bool NOP();

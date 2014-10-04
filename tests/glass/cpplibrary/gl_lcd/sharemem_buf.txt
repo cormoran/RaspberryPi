@@ -1,0 +1,47 @@
+  void ShareMemInit(char AppMode){
+    switch(AppMode){
+    case Mode.Master:
+      setShareMemory();
+      break;
+    case Mode.Slave:
+      getShareMemory();
+      break;
+    default:
+      printf("Error:AppMode");
+      exit(-1);
+  }
+
+
+
+  char M014C9163SPI::setShareMemory(){
+    key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
+    char *adr;
+    id = shmget(key, 8, IPC_CREAT|IPC_EXCL|0666);//8byteŠm•ÛAŠù‚É‚ ‚Á‚½‚ç¸”s
+    if(id == -1){perror("shmget error");exit(-1);}
+    adr = (char *)shmat(id, NULL, 0);
+    if(adr == (void *)-1){
+      perror("shmat error");
+      if(shmctl(id, IPC_RMID, 0)==-1){perror("shmctl error");exit(-1);}
+    }
+    memset(adr,0,8);//ƒƒ‚ƒŠ‰Šú‰»
+    ShareMemoryAddress=adr;
+    MyWindowID=0;
+    return 0;
+  }
+
+  char M014C9163SPI::getShareMemory(){
+    key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
+    char *adr;
+    id = shmget(key,8,0);
+    if(id == -1){perror("shmget error");exit(-1);}
+    adr = (char *)shmat(id,0,0);
+    if(adr == (void *)-1){
+      perror("shmat error");
+      if(shmctl(id, IPC_RMID, 0)==-1)perror("shmctl error");
+      exit(-1);
+    }
+    ShareMemoryAddress=adr;
+    *adr+=1;//slave‚É‚Â‚«sharemem‚Ì0”Ô’n‚ª1up‚·‚é
+    MyWindowID=*adr;
+    return 0;
+  }
