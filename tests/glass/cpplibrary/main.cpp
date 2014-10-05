@@ -21,10 +21,15 @@ int main(int argc,char **argv)
 {
   init();
 
-  gl_lcd::M014C9163SPI glcd;
+  gl_lcd::M014C9163SPI glcd(1);//1:master
   gl_lcd::framebuffer fb;
+
+  char buffer[128*128*2];
+
   while(1){
-      glcd.SendFrame(fb.GetFrameAddress(),128*128*2);
-      delay(10);
+    fb.FrameCopy(buffer,128,128);
+    //glcd.SendFrame(buffer,128*128*2);
+    glcd.SendFrame(fb.GetFrameAddress(),128*128*2);
+    delay(10);
   }
 }

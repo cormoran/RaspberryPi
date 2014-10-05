@@ -5,46 +5,25 @@ typedef unsigned char uchar;
 #include<bcm2835.h>
 #include<cstdio>
 #include<cstdlib>
+#include<string.h>
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<unistd.h>
 
 namespace gl_lcd{
 
+
   M014C9163SPI::M014C9163SPI(char AppMode){
-    //Is_inited=false;
-    init();
-    //ShareMemInit(AppMode);
-    //Is_inited=true;
+    if(init())exit(1);
+    if(ShareMemInit(AppMode))exit(1);
   }
-  ~M014C9163SPI(){
-    //何か？
+  M014C9163SPI::~M014C9163SPI(){
+    end();
   }
-
-
-  void M014C9163SPI::SPI_init(){
-    bcm2835_spi_begin();
-    bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      //transfer MSB first 
-    bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   //
-    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_8);     //SPI Clock is 125MHz/8  NOTE:Max is 125MHx/2,Min is /65536
-    bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      //select CS0
-    bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      //CS0 active LOW  
-  }
-
-  void M014C9163SPI::GPIO_init(){
-    if(!bcm2835_init()){
-      printf("cannot open bcm");
-      exit(1);
-    }
-    bcm2835_gpio_fsel(RST,BCM2835_GPIO_FSEL_OUTP);
-    bcm2835_gpio_fsel(DC,BCM2835_GPIO_FSEL_OUTP);
-    bcm2835_gpio_write(RST,HIGH);
-    bcm2835_gpio_write(DC,LOW);
-  }
-  void M014C9163SPI::init(){
-
-    GPIO_init();
-    SPI_init();
+  
+  bool M014C9163SPI::init(){
+    if(GPIO_init())return 1;//error
+    if(SPI_init())return 1;//error
     delay(120);
 
     bcm2835_gpio_write(RST,HIGH);
@@ -56,7 +35,7 @@ namespace gl_lcd{
     EXIT_SLEEP_MODED();
     delay(200);
     SET_DISPLAY_ON();
-    SET_ADDRESS_MODE(0b00101000);
+    SET_ADDRESS_MODE(0b00001000);
     /* 7-5が0のとき通常のグラフ座標（左下が原点）
      * 詳細はDataSheet P127
      *
@@ -77,12 +56,82 @@ namespace gl_lcd{
      * 0:none
      */
     Draw_rectangle(0, 0, 129,129, RGB_Colors[BLACK]);
- 
+    return 0;
   }
+
+  bool M014C9163SPI::ShareMemInit(char AppMode){
+    key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
+    char *adr;
+
+    switch(AppMode){
+    case 1://Mode.Master:
+      id = shmget(key, 8, IPC_CREAT|IPC_EXCL|0666);//8byte確保、既にあったら失敗
+      if(id == -1){perror("shmget error");return 1;}
+      adr = (char *)shmat(id, NULL, 0);
+      if(adr == (void *)-1){
+	perror("shmat error");
+	if(shmctl(id, IPC_RMID, 0)==-1)
+	  perror("shmctl error");
+	return 1;
+      }
+      memset(adr,0,8);//メモリ初期化
+      ShareMemoryAddress=adr;
+      MyWindowID=0;
+
+      break;
+    case 0://Mode.Slave:
+      id = shmget(key,8,0);
+      if(id == -1){perror("shmget error");return 1;}
+      adr = (char *)shmat(id,NULL,0);
+      if(adr == (void *)-1){
+	perror("shmat error");
+	if(shmctl(id, IPC_RMID, 0)==-1)
+	  perror("shmctl error");
+	return 1;
+      }
+      ShareMemoryAddress=adr;
+      *adr+=1;//slaveにつきsharememの0番地が1upする
+      MyWindowID=*adr;
+
+      break;
+    default:
+      printf("Error:invailed number");
+      return 1;
+    }
+    return 0;
+  }
+
+
+  bool M014C9163SPI::SPI_init(){
+    bcm2835_spi_begin();
+    bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      //transfer MSB first 
+    bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   //
+    bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_8);     //SPI Clock is 125MHz/8  NOTE:Max is 125MHx/2,Min is /65536
+    bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                      //select CS0
+    bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);      //CS0 active LOW  
+    return 0;
+  }
+
+  bool M014C9163SPI::GPIO_init(){
+    if(!bcm2835_init()){
+      printf("cannot open bcm");
+      return 1;
+    }
+    bcm2835_gpio_fsel(RST,BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(DC,BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_write(RST,HIGH);
+    bcm2835_gpio_write(DC,LOW);
+    return 0;
+  }
+
 
   void M014C9163SPI::end(){
     bcm2835_spi_end();
-    if(!bcm2835_close)perror("bcm2835_close error");
+    if(!bcm2835_close())perror("bcm2835_close error");
+
+    if(shmctl(id, IPC_RMID, 0)==-1)
+      perror("shmctl error");
+
   }  
 
   void M014C9163SPI::Sendbyte(char cmd,uchar data){
@@ -94,14 +143,15 @@ namespace gl_lcd{
     bcm2835_gpio_write(DC,cmd&0x01);
     bcm2835_spi_writenb(data,len);
   }
-
-  void M014C9163SPI::SendFrame(char *buf,uchar len)
+  
+  //Senddata by RGB 565 Mode
+  void M014C9163SPI::SendFrame(char *buf,uint len)
   {
     SET_PIXEL_FORMAT(0b01010101);//RGB565モードにする
-    glcd.SET_PAGE_ADDRESS(0,WINDOWPX_H-1);
-    glcd.SET_COLUMN_ADDRESS(0,WINDOWPX_W-1);
-    glcd.WRITE_MEMORY_START();
-    glcd.Sendbytes(1,buf,len);
+    SET_PAGE_ADDRESS(0,WINDOWPX_H-1);
+    SET_COLUMN_ADDRESS(0,WINDOWPX_W-1);
+    WRITE_MEMORY_START();
+    Sendbytes(1,buf,len);
   }
   void M014C9163SPI::Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb)
   {
@@ -163,7 +213,6 @@ namespace gl_lcd{
 
   void M014C9163SPI::Draw_cycle(uchar x0,uchar y0,uchar r,uchar w,uchar *rgb)
   {
-    uchar i;
     uchar x = r;
     uchar y = 0;
     int F = -2 * r + 3;

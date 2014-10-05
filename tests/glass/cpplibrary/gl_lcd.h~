@@ -3,12 +3,11 @@
 
 #include "gl_lcd_data.h"
 
-#define DC RPI_BPLUS_GPIO_J8_05
+#define DC RPI_BPLUS_GPIO_J8_18
 #define SCK RPI_BPLUS_GPIO_J8_23
 #define SDA RPI_BPLUS_GPIO_J8_19 
 #define CS RPI_BPLUS_GPIO_J8_24
-#define RST RPI_BPLUS_GPIO_J8_22
-
+#define RST RPI_BPLUS_GPIO_J8_32
 
 typedef unsigned char uchar;
 
@@ -16,31 +15,18 @@ namespace gl_lcd{
 
   class M014C9163SPI
   {
-  private:
-    void SPI_init();
-    void GPIO_init();
-    void init();
-    void end();
-    //void ShareMemInit(char AppMode);
-    //char setShareMemory();
-    //char getShareMemory();
-
-    //char *ShareMemoryAddress;
-    //char MyWindwID;
-    //bool Is_inited;
   public:
     
     enum colors{BLACK,RED,PINK,PURPLE,MAGENTA,BLUE,MCYAN,GREEN,LIME,YELLOW,ORANGLE,GRAY,WHITE};
     enum Mode{Master,Slave};
 
-    constexpr int WINDOWPX_W=128,WINDOWPX_H=128;
+    enum{WINDOWPX_W=128,WINDOWPX_H=128};
 
     M014C9163SPI(char AppMode);
     ~M014C9163SPI();
 
     void Sendbytes(char cmd,char *data,unsigned int len);
-    void Sendbyte(char cmd,uchar data);
-    
+    void Sendbyte(char cmd,uchar data);    
     void SendFrame(char *buf,unsigned int len);
 
     void Draw_rectangle(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
@@ -52,6 +38,20 @@ namespace gl_lcd{
     void Draw_string(uchar x,uchar y,char *str,uchar *fontrgb,uchar *backrgb);
 
 
+  private:
+    bool SPI_init();
+    bool GPIO_init();
+    bool init();
+    void end();
+    bool ShareMemInit(char AppMode);
+    //char setShareMemory();
+    //char getShareMemory();
+
+    char *ShareMemoryAddress;
+    char MyWindowID;
+    int id
+
+  public:
     /**/ bool NOP();
     /**/ bool SOFT_RESET();
     /**/ bool ENTER_SLEEP_MODE();

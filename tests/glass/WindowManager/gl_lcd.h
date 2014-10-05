@@ -8,11 +8,11 @@ extern "C" {
 
 #include "gl_lcd_data.h"
 
-#define DC RPI_BPLUS_GPIO_J8_05
+#define DC RPI_BPLUS_GPIO_J8_18
 #define SCK RPI_BPLUS_GPIO_J8_23
 #define SDA RPI_BPLUS_GPIO_J8_19 
 #define CS RPI_BPLUS_GPIO_J8_24
-#define RST RPI_BPLUS_GPIO_J8_22
+#define RST RPI_BPLUS_GPIO_J8_32
 
 #define NOP_glcd                    Sendbyte_glcd(0,0x00)
 #define SOFT_RESET_glcd             Sendbyte_glcd(0,0x01)
