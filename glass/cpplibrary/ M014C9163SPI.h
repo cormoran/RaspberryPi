@@ -1,5 +1,5 @@
-#ifndef GL_LCD_H
-#define GL_LCD_H
+#ifndef  M014C9163SPI_H
+#define  M014C9163SPI_H
 
 #include "gl_lcd_data.h"
 
@@ -12,6 +12,7 @@
 typedef unsigned char uchar;
 
 namespace gl_lcd{
+
 
   class M014C9163SPI
   {
@@ -28,28 +29,29 @@ namespace gl_lcd{
     void Sendbytes(char cmd,char *data,unsigned int len);
     void Sendbyte(char cmd,uchar data);    
     void SendFrame(char *buf,unsigned int len);
-
+    /*
     void Draw_rectangle(uchar x,uchar y,uchar w,uchar h,uchar *rgb);
     void Draw_line(uchar xs,uchar ys,uchar xe,uchar ye,uchar w, uchar *rgb);
     void Draw_cycle(uchar x0,uchar y0,uchar r,uchar w,uchar *rgb);
     void Draw_eclipse(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w,uchar *rgb);
-    void Reset_H(void);
+
     void Draw_chara(uchar x,uchar y,char chara,uchar *fontrgb,uchar *backrgb);
     void Draw_string(uchar x,uchar y,char *str,uchar *fontrgb,uchar *backrgb);
-
+    */
+    void Reset_H(void);
 
   private:
     bool SPI_init();
     bool GPIO_init();
     bool init();
     void end();
-    bool ShareMemInit(char AppMode);
+    //    bool ShareMemInit(char AppMode);
     //char setShareMemory();
     //char getShareMemory();
 
-    char *ShareMemoryAddress;
-    char MyWindowID;
-    int id
+    //char *ShareMemoryAddress;
+    //char MyWindowID;
+    //int id;
 
   public:
     /**/ bool NOP();
@@ -80,5 +82,6 @@ namespace gl_lcd{
     /**/ bool SET_TEAR_SCANLINE(uchar one,uchar two);
 
   };
+
 }
-#endif/* GL_LCD_H */
+#endif/*  M014C9163SPI_H */

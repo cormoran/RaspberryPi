@@ -9,17 +9,25 @@ typedef unsigned char uchar;
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<unistd.h>
+#include<memory>
 
-namespace gl_lcd{
+#define DC RPI_BPLUS_GPIO_J8_18
+#define SCK RPI_BPLUS_GPIO_J8_23
+#define SDA RPI_BPLUS_GPIO_J8_19 
+#define CS RPI_BPLUS_GPIO_J8_24
+#define RST RPI_BPLUS_GPIO_J8_32
 
 
-  M014C9163SPI::M014C9163SPI(char AppMode){
-    if(init())exit(1);
-    if(ShareMemInit(AppMode))exit(1);
-  }
-  M014C9163SPI::~M014C9163SPI(){
-    end();
-  }
+M014C9163SPI::glaphic_lcd* Create()
+{
+  
+  if(init())exit(1);
+  //if(ShareMemInit(AppMode))exit(1);
+}
+
+M014C9163SPI::~M014C9163SPI(){
+  end();
+}
   
   bool M014C9163SPI::init(){
     if(GPIO_init())return 1;//error
@@ -59,49 +67,6 @@ namespace gl_lcd{
     return 0;
   }
 
-  bool M014C9163SPI::ShareMemInit(char AppMode){
-    key_t key = ftok("/home/pi/Programs/RaspberryPi/tests/glass/ShareMemoryKeyFile",1);
-    char *adr;
-
-    switch(AppMode){
-    case 1://Mode.Master:
-      id = shmget(key, 8, IPC_CREAT|IPC_EXCL|0666);//8byte確保、既にあったら失敗
-      if(id == -1){perror("shmget error");return 1;}
-      adr = (char *)shmat(id, NULL, 0);
-      if(adr == (void *)-1){
-	perror("shmat error");
-	if(shmctl(id, IPC_RMID, 0)==-1)
-	  perror("shmctl error");
-	return 1;
-      }
-      memset(adr,0,8);//メモリ初期化
-      ShareMemoryAddress=adr;
-      MyWindowID=0;
-
-      break;
-    case 0://Mode.Slave:
-      id = shmget(key,8,0);
-      if(id == -1){perror("shmget error");return 1;}
-      adr = (char *)shmat(id,NULL,0);
-      if(adr == (void *)-1){
-	perror("shmat error");
-	if(shmctl(id, IPC_RMID, 0)==-1)
-	  perror("shmctl error");
-	return 1;
-      }
-      ShareMemoryAddress=adr;
-      *adr+=1;//slaveにつきsharememの0番地が1upする
-      MyWindowID=*adr;
-
-      break;
-    default:
-      printf("Error:invailed number");
-      return 1;
-    }
-    return 0;
-  }
-
-
   bool M014C9163SPI::SPI_init(){
     bcm2835_spi_begin();
     bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      //transfer MSB first 
@@ -129,29 +94,35 @@ namespace gl_lcd{
     bcm2835_spi_end();
     if(!bcm2835_close())perror("bcm2835_close error");
 
-    if(shmctl(id, IPC_RMID, 0)==-1)
+    /*if(shmctl(id, IPC_RMID, 0)==-1)
       perror("shmctl error");
-
+    */
   }  
 
   void M014C9163SPI::Sendbyte(char cmd,uchar data){
-    bcm2835_gpio_write(DC, cmd&0x01);
-    bcm2835_spi_transfer(data);
+    //if(*(ShareMemoryAddress+1)==MyWindowID){
+      bcm2835_gpio_write(DC, cmd&0x01);
+      bcm2835_spi_transfer(data);
+      //}
   }
   void M014C9163SPI::Sendbytes(char cmd,char *data,unsigned int len)
   {
-    bcm2835_gpio_write(DC,cmd&0x01);
-    bcm2835_spi_writenb(data,len);
+    //if(*(ShareMemoryAddress+1)==MyWindowID){
+      bcm2835_gpio_write(DC,cmd&0x01);
+      bcm2835_spi_writenb(data,len);
+      //}
   }
   
   //Senddata by RGB 565 Mode
   void M014C9163SPI::SendFrame(char *buf,uint len)
   {
-    SET_PIXEL_FORMAT(0b01010101);//RGB565モードにする
-    SET_PAGE_ADDRESS(0,WINDOWPX_H-1);
-    SET_COLUMN_ADDRESS(0,WINDOWPX_W-1);
-    WRITE_MEMORY_START();
-    Sendbytes(1,buf,len);
+    //if(*(ShareMemoryAddress+1)==MyWindowID){
+      SET_PIXEL_FORMAT(0b01010101);//RGB565モードにする
+      SET_PAGE_ADDRESS(0,WINDOWPX_H-1);
+      SET_COLUMN_ADDRESS(0,WINDOWPX_W-1);
+      WRITE_MEMORY_START();
+      Sendbytes(1,buf,len);
+      //}
   }
   void M014C9163SPI::Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb)
   {
@@ -168,136 +139,6 @@ namespace gl_lcd{
 	}
   }
 
-  /*直線描写関数
-   * (xs,ys)から(xe,ye)まで太さwで色colorの直線を引く
-   */
-  void M014C9163SPI::Draw_line(uchar xs,uchar ys,uchar xe,uchar ye, uchar w,uchar *rgb)
-  {
-    //Bresenhamで直線描写
-    uchar dx,dy;
-    char sx,sy;
-    int slope;
-    if(xs<xe){
-      sx=1;
-      dx=xe-xs;
-    }
-    else{
-      sx=-1;
-      dx=xs-xe;
-    }
-    if(ys<ye){
-      sy=1;
-      dy=ye-ys;
-    }
-    else{
-      sy=-1;
-      dy=ys-ye;
-    }
-    slope=dx-dy;
-
-    while(1){
-      Draw_rectangle(xs,ys,w,w,rgb);
-      if(xs==xe && ys==ye)break;
-      if(slope*2>-dy){
-	slope-=dy;
-	xs+=sx;
-      }
-      if(slope*2<dx){
-	slope+=dx;
-	ys+=sy;
-      }
-    }
-
-    return;
-  }
-
-  void M014C9163SPI::Draw_cycle(uchar x0,uchar y0,uchar r,uchar w,uchar *rgb)
-  {
-    uchar x = r;
-    uchar y = 0;
-    int F = -2 * r + 3;
-    while ( x >= y ) {
-      Draw_rectangle( x0 + x, y0 + y,w,w, rgb );
-      Draw_rectangle( x0 - x, y0 + y,w,w, rgb );
-      Draw_rectangle( x0 + x, y0 - y,w,w, rgb );
-      Draw_rectangle( x0 - x, y0 - y,w,w, rgb );
-      Draw_rectangle( x0 + y, y0 + x,w,w, rgb );
-      Draw_rectangle( x0 - y, y0 + x,w,w, rgb );
-      Draw_rectangle( x0 + y, y0 - x,w,w, rgb );
-      Draw_rectangle( x0 - y, y0 - x,w,w, rgb );
-      if(F>=0){
-	x--;
-	F -= 4 * x;
-      }
-      y++;
-      F += 4 * y + 2;
-    }
-  }
-
-  void M014C9163SPI::Draw_eclipse(uchar x0,uchar y0,uchar r,uchar a,uchar b,uchar w, uchar *rgb)
-  {
-    uchar x = (int)( (double)r / sqrt( (double)a ) );
-    int y = 0;
-    double d = sqrt( (double)a ) * (double)r;
-    int F = (int)( -2.0 * d ) +     a + 2 * b;
-    int H = (int)( -4.0 * d ) + 2 * a     + b;
-
-    while (1) {
-      Draw_rectangle( x0 + x, y0 + y,w,w, rgb );
-      Draw_rectangle( x0 - x, y0 + y,w,w, rgb );
-      Draw_rectangle( x0 + x, y0 - y,w,w, rgb );
-      Draw_rectangle( x0 - x, y0 - y,w,w, rgb );
-
-      if(!x)break;
-
-      if ( F >= 0 ) {
-	--x;
-	F -= 4 * a * x;
-	H -= 4 * a * x - 2 * a;
-      }
-      if ( H < 0 ) {
-	++y;
-	F += 4 * b * y + 2 * b;
-	H += 4 * b * y;
-      }
-    }
-  }
-  
-
-  void M014C9163SPI::Draw_chara(uchar x,uchar y,char chara,uchar *fontrgb, uchar *backrgb)
-  {
-    char charanum=chara-' ';
-    char i,j;
-    SET_PAGE_ADDRESS(y,y+5-1);
-    SET_COLUMN_ADDRESS(x,x+8-1);
-    WRITE_MEMORY_START();
-    for(i=0;i<5;i++)
-      {
-	unsigned char fline=Font[charanum][i];
-	for(j=0;j<8;j++)
-	  {
-	    if(fline & 0x01){
-	      Sendbyte(1, fontrgb[0]);
-	      Sendbyte(1, fontrgb[1]);
-	      Sendbyte(1, fontrgb[2]);
-	    }
-	    else{
-	      Sendbyte(1, backrgb[0]);
-	      Sendbyte(1, backrgb[1]);
-	      Sendbyte(1, backrgb[2]);
-	    }
-	    fline=fline>>1;
-	  }
-      }
-  }
-
-  void M014C9163SPI::Draw_string(uchar x,uchar y,char *str,uchar *fontrgb,uchar *backrgb)
-  {
-    while(*str){
-      Draw_chara(x,y,*str++,fontrgb,backrgb);
-      y+=6;
-    }
-  }
 
   /**/ bool M014C9163SPI::NOP(){
     Sendbyte(0,0x00);
@@ -431,5 +272,3 @@ namespace gl_lcd{
     Sendbyte(1,two);
     return 0;
   }
-
-}

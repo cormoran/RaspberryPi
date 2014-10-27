@@ -1,10 +1,10 @@
+//LED点滅テスト
 #include <stdio.h>
 #include <stdlib.h>
 #include <bcm2835.h>
 #include <signal.h>
 
 #define PIN RPI_V2_GPIO_P1_07
-
 
 void signal_callback_handler(int signum)
 {

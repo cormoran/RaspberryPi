@@ -27,7 +27,7 @@ int main(int argc,char **argv)
   char buffer[128*128*2];
 
   while(1){
-    fb.FrameCopy(buffer,128,128);
+    //fb.FrameCopy(buffer,128,128);
     //glcd.SendFrame(buffer,128*128*2);
     glcd.SendFrame(fb.GetFrameAddress(),128*128*2);
     delay(10);
