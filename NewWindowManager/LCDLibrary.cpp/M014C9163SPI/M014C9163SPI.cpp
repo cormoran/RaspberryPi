@@ -106,13 +106,19 @@ void M014C9163SPI::end()
   if(!bcm2835_close())perror("bcm2835_close error");
 
 } 
-/*
-//return (H,W)
-pair<int,int> get_lcd_size()
+
+
+int get_lcd_H()
 {
-  return pair<int,int>(M014C9163SPI_WINODW_H,M014C9163SPI_WINODW_W);
+  return M014C9163SPI_WINODW_H;
 }
-*/
+
+int get_lcd_W()
+{
+  return M014C9163SPI_WINODW_W;
+}
+
+
 void M014C9163SPI::Sendbyte(char cmd,uchar data)
 {
   bcm2835_gpio_write(DC, cmd&0x01);
@@ -123,6 +129,16 @@ void M014C9163SPI::Sendbytes(char cmd,char *data,unsigned int len)
 {
   bcm2835_gpio_write(DC,cmd&0x01);
   bcm2835_spi_writenb(data,len);
+}
+
+void SendData_RGB565(char *data,int num)
+{
+  SET_PIXEL_FORMAT(0b01010101);//RGB565モードにする
+  SET_PAGE_ADDRESS(0,get_lcd_H()-1);
+  SET_COLUMN_ADDRESS(0,get_lcd_W()-1);
+  WRITE_MEMORY_START();
+  Sendbytes(1,buf,len);
+  SET_PIXEL_FORMAT(0b11100110);//RGB666モードにもどす
 }
 
 void M014C9163SPI::Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb)

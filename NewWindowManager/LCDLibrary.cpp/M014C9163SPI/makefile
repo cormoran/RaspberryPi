@@ -1,16 +1,16 @@
 .PHONY:all
-all:LibraryTest
+all:M014C9163SPI_Test
 
-LibraryTest:LibraryTest.o M014C9163SPI.o
-	g++ -Wall -o LibraryTest LibraryTest.o M014C9163SPI.o -lbcm2835
+M014C9163SPI_Test:M014C9163SPI_Test.o M014C9163SPI.o
+	g++ -Wall -o M014C9163SPI_Test M014C9163SPI_Test.o M014C9163SPI.o -lbcm2835
 
-LibraryTest.o : LibraryTest.cpp
-	g++ -Wall -c LibraryTest.cpp  -lbcm2835
+M014C9163SPI_Test.o : M014C9163SPI_Test.cpp
+	g++ -Wall -c M014C9163SPI_Test.cpp  -lbcm2835
 
 M014C9163SPI.o : M014C9163SPI.cpp
 	g++ -Wall -c M014C9163SPI.cpp -lbcm2835
 
-LibraryTest.o:M014C9163SPI.h
+M014C9163SPI_Test.o:M014C9163SPI.h
 M014C9163SPI.o:M014C9163SPI.h
 
 .PHONY:clean

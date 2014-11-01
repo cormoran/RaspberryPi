@@ -3,19 +3,21 @@
 typedef unsigned char uchar;
 class M014C9163SPI
 {
- public:
-  M014C9163SPI();
-  ~M014C9163SPI();
+ protected:
   void Sendbyte(char cmd,uchar data);
   void Sendbytes(char cmd,char *data,unsigned int len);
+  void SendData_RGB565(char *data,int num);
   void Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb);
-  //pair<int,int> get_lcd_size();
  private:
   bool SPI_init();
   bool GPIO_init();
   bool init();
   void end();
  public:
+  M014C9163SPI();
+  ~M014C9163SPI();
+  int get_lcd_H()
+  int get_lcd_W()
   /**/ bool NOP();
   /**/ bool SOFT_RESET();
   /**/ bool ENTER_SLEEP_MODE();
@@ -42,7 +44,6 @@ class M014C9163SPI
   /**/ bool SET_PIXEL_FORMAT(uchar format);
   /**/ bool WRITE_MEMORY_CONTINUE ();
   /**/ bool SET_TEAR_SCANLINE(uchar one,uchar two);
-  
 };
 
 #endif
