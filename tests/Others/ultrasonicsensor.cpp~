@@ -1,0 +1,21 @@
+#include <bcm2835.h>
+#include<iostream>
+
+#define TRIG
+#define ECHO
+
+int main(){
+  if (!bcm2835_init()){
+    std::cout<<"bcm2835 init error";
+    return 1;
+  }
+
+  //pin initialize
+  bcm2835_gpio_fsel(TRIG, BCM2835_GPIO_FSEL_OUTP);
+  bcm2835_gpio_fsel(ECHO, BCM2835_GPIO_FSEL_INPT);
+
+  //sensor initialize
+  bcm2835_gpio_write(TRIG, LOW);
+  bcm2835_gpio_write(TRIG, HIGH);
+  bcm2835_gpio_write(TRIG, LOW);
+}

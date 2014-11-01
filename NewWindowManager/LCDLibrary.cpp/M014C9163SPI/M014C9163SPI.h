@@ -1,6 +1,6 @@
-#ifdef M014C9163SPI_CPP
+#ifndef M014C9163SPI_CPP
 #define M014C9163SPI_CPP
-
+typedef unsigned char uchar;
 class M014C9163SPI
 {
  public:
@@ -9,7 +9,7 @@ class M014C9163SPI
   void Sendbyte(char cmd,uchar data);
   void Sendbytes(char cmd,char *data,unsigned int len);
   void Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb);
-  pair<int,int> get_lcd_size();
+  //pair<int,int> get_lcd_size();
  private:
   bool SPI_init();
   bool GPIO_init();
@@ -42,7 +42,7 @@ class M014C9163SPI
   /**/ bool SET_PIXEL_FORMAT(uchar format);
   /**/ bool WRITE_MEMORY_CONTINUE ();
   /**/ bool SET_TEAR_SCANLINE(uchar one,uchar two);
- 
+  
 };
 
 #endif

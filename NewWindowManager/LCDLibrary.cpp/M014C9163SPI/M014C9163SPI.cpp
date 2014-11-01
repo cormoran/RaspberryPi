@@ -1,6 +1,12 @@
 #include<bcm2835.h>
 #include<unistd.h>
-#include<M014C9163SPI.h>
+#include<cstdio>
+#include"M014C9163SPI.h"
+#include<cstdio>
+
+#include<string.h>
+#include<sys/ipc.h>
+#include<memory>
 
 #define DC RPI_BPLUS_GPIO_J8_18
 #define SCK RPI_BPLUS_GPIO_J8_23
@@ -11,6 +17,8 @@
 #define M014C9163SPI_WINODW_W 128
 #define M014C9163SPI_WINODW_H 128
 
+ 
+
 M014C9163SPI::M014C9163SPI()
 {
   init();
@@ -20,7 +28,7 @@ M014C9163SPI::~M014C9163SPI()
 {
   end();
 }
-
+ 
 
 bool M014C9163SPI::SPI_init()
 {
@@ -84,23 +92,27 @@ bool M014C9163SPI::init()
    * 1:none
    * 0:none
    */
-  Draw_rectangle(0, 0, 129,129, RGB_Colors[BLACK]);
+  uchar RGB[3]={200,200,200};
+  Draw_rectangle(0, 0, 129,129, RGB);
   return 0;
 }
 
 void M014C9163SPI::end()
 {
+  uchar RGB[3]={100,0,0};
+  Draw_rectangle(0, 0, 129,129, RGB);
+
   bcm2835_spi_end();
   if(!bcm2835_close())perror("bcm2835_close error");
 
 } 
-
+/*
 //return (H,W)
 pair<int,int> get_lcd_size()
 {
   return pair<int,int>(M014C9163SPI_WINODW_H,M014C9163SPI_WINODW_W);
 }
-
+*/
 void M014C9163SPI::Sendbyte(char cmd,uchar data)
 {
   bcm2835_gpio_write(DC, cmd&0x01);
@@ -123,7 +135,9 @@ void M014C9163SPI::Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb)
   for(i = 0; i <h; i++)
     for(j=0;j<w;j++)
       {
-	Sendbytes(1,rgb,3);
+	Sendbyte(1,rgb[0]);
+	Sendbyte(1,rgb[1]);
+	Sendbyte(1,rgb[2]);
       }
 }
 
@@ -261,3 +275,4 @@ void M014C9163SPI::Draw_rectangle(uchar x,uchar y,uchar w,uchar h, uchar *rgb)
   Sendbyte(1,two);
   return 0;
 }
+
