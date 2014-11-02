@@ -3,7 +3,7 @@
 typedef unsigned char uchar;
 class M014C9163SPI
 {
- protected:
+ public:
   void Sendbyte(char cmd,uchar data);
   void Sendbytes(char cmd,char *data,unsigned int len);
   void SendData_RGB565(char *data,int num);
@@ -15,9 +15,9 @@ class M014C9163SPI
   void end();
  public:
   M014C9163SPI();
-  ~M014C9163SPI();
-  int get_lcd_H()
-  int get_lcd_W()
+  virtual ~M014C9163SPI();
+  int get_lcd_H();
+  int get_lcd_W();
   /**/ bool NOP();
   /**/ bool SOFT_RESET();
   /**/ bool ENTER_SLEEP_MODE();

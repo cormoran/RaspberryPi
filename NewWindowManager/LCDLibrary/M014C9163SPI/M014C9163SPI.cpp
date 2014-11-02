@@ -24,7 +24,7 @@ M014C9163SPI::M014C9163SPI()
   init();
 }
 
-M014C9163SPI::~M014C9163SPI()
+ M014C9163SPI::~M014C9163SPI()
 {
   end();
 }
@@ -99,21 +99,24 @@ bool M014C9163SPI::init()
 
 void M014C9163SPI::end()
 {
-  uchar RGB[3]={100,0,0};
-  Draw_rectangle(0, 0, 129,129, RGB);
+  /*
+    メモ:spiをcloseするとspiが使えなくなるので不要
+         bcm2835はcで実装されてるのでここで閉じるとプロセス全体で閉じることになる？？？
+   */
 
-  bcm2835_spi_end();
-  if(!bcm2835_close())perror("bcm2835_close error");
-
+  //  bcm2835_spi_end();
+  //if(!bcm2835_close())perror("bcm2835_close error");
+  //puts("bcm close");
+  return ;
 } 
 
 
-int get_lcd_H()
+int M014C9163SPI::get_lcd_H()
 {
   return M014C9163SPI_WINODW_H;
 }
 
-int get_lcd_W()
+int M014C9163SPI::get_lcd_W()
 {
   return M014C9163SPI_WINODW_W;
 }
@@ -131,13 +134,13 @@ void M014C9163SPI::Sendbytes(char cmd,char *data,unsigned int len)
   bcm2835_spi_writenb(data,len);
 }
 
-void SendData_RGB565(char *data,int num)
+void M014C9163SPI::SendData_RGB565(char *data,int num)
 {
   SET_PIXEL_FORMAT(0b01010101);//RGB565モードにする
   SET_PAGE_ADDRESS(0,get_lcd_H()-1);
   SET_COLUMN_ADDRESS(0,get_lcd_W()-1);
   WRITE_MEMORY_START();
-  Sendbytes(1,buf,len);
+  Sendbytes(1,data,num);
   SET_PIXEL_FORMAT(0b11100110);//RGB666モードにもどす
 }
 
