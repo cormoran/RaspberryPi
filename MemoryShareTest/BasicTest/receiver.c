@@ -25,7 +25,8 @@ int main(void)
   adr = (char *)shmat(id, NULL, 0);
   if(adr == (void *)-1){
     perror("shmat error");
-  } else {
+  } 
+  else {
     char strbuf[128]="Initial";
     strcpy(adr,strbuf);
 

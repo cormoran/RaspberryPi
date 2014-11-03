@@ -1,5 +1,3 @@
-//WindowManagerのサーバ側
-
 #include<sys/msg.h>
 #include<cstdio>
 #include<cstdlib>
@@ -16,31 +14,6 @@ using namespace std;
 #define MSG_SVR_RE 3
 #define MSG_APP_SLEEP 4
 #define MSG_APP_MSG 5
-
-#define MSG_APP_ID_START 100
-
-/*
-  順序など：全てプロセスIDで管理
- */
-typedef struct ApplicatonData
-{
-  long pid;//process id
-  long msgq_id;
-  string name;
-  string about;
-  ApplicatonData(long pid_,long msgq_id_,string name_,string about_="")
-  {
-    pid=pid_;msgq_id=msgq_id_;name=name_;about=about_;
-  }
-  bool operator<(const ApplicatonData &right)const
-  {
-    return pid<right.pid;
-  }
-  bool operator==(const ApplicatonData &a)const
-  {
-    return pid==a.pid;
-  }
-}ApplicatonData;
 
 class MessageServer
 {
@@ -140,95 +113,16 @@ public:
 
 };
 
-MessageServer MsgSvr;
-vector<ApplicatonData> AppList;
-long MsgQue_next_id=MSG_APP_ID_START;
-long now_using_pid=0;
-
-bool get_Start_msg()
-{
-  string msg;
-  //起動通知受付
-  if( (msg=MsgSvr.Mymsgrcv(MSG_APP_START))!="")
-    {
-      long pid=atol(msg.c_str());//数値が先頭であればOK
-      if(pid>0)
-	{
-	  ApplicatonData newapp(pid,MsgQue_next_id,msg.substr(msg.find(" ",0)+1));
-	  AppList.push_back(newapp);
-	  string ret=to_string(pid)+" "+to_string(MsgQue_next_id);
-	  if(MsgSvr.Mymsgsnd(MSG_SVR_RE,ret,false)==-1)perror("can't send response : ");
-	  MsgQue_next_id++;
-	  return true;
-	}
-    }
-  return false;
-}
-
-bool get_End_msg()
-{
-  string msg;
-  //終了通知受付
-  if( (msg=MsgSvr.Mymsgrcv(MSG_APP_END))!="")
-    {
-      puts("Remove App");
-      long pid=atol(msg.c_str());
-      if(pid)
-	{
-	  ApplicatonData temp(pid,0,"");
-	  vector<ApplicatonData>::iterator itr=find(AppList.begin(),AppList.end(),temp);
-	  if(itr!=AppList.end())
-	    {
-	      AppList.erase(itr);
-	      return true;
-	    }
-	}
-    }
-  return false;
-}
-
-//現在使用中のをやめさせる
-bool prohibit_use()
-{
-  if(now_using_pid!=0)
-    {
-      ApplicatonData temp(now_using_pid,0,"");
-      vector<ApplicatonData>::iterator itr=find(AppList.begin(),AppList.end(),temp);
-      if(itr!=AppList.end())
-	{
-	  if( MsgSvr.Mymsgsnd(itr->msgq_id,"enduse",false)==-1)return false;
-	  now_using_pid=0;
-	  return true;
-	}
-    }
-  return false;
-}
-
-bool allow_use(int App_pid)
-{
-  ApplicatonData temp(App_pid,0,"");
-  vector<ApplicatonData>::iterator itr=find(AppList.begin(),AppList.end(),temp);
-  if(itr!=AppList.end())
-    {
-      if(MsgSvr.Mymsgsnd(itr->msgq_id,"uselcd",false)==-1)return false;
-      now_using_pid=App_pid;
-    }
-}
-
 int main()
 {
-  int i;
-  for(i=0;i<25;i++)
-    {
-      get_Start_msg();
-      get_End_msg();
-      int j;
-      for(j=0;j<AppList.size();j++)
-	{
-	  cout<<"Process ID : "<<AppList[j].pid<<" Queue type ID : "<<AppList[j].msgq_id<<endl;
-	}
-      puts("");
-      sleep(2);
-    }
+  MessageServer MsgSvr;
+  int i=1;
+  string snd=to_string(getpid())+" "+"child"+to_string(i);
+  //  MsgSvr.shows();
+  cout<<snd<<endl;
+  MsgSvr.Mymsgsnd(1,snd,false);
+  sleep(5);
+  snd=to_string(getpid());
+  MsgSvr.Mymsgsnd(2,snd,false);
   return 0;
 }

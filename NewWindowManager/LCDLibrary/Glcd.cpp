@@ -26,7 +26,6 @@ Glcd::Glcd()
     {
       //すでに存在していた場合
       Is_Created_sem=false;
-      puts("connect sem");
       if( (semid=semget(semkey,1,IPC_CREAT|0666)) ==-1)
 	{
 	  perror("In Glcd class : semget error :");
