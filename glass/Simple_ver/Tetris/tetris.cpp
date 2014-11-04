@@ -1,14 +1,31 @@
-#include <ncurses.h>
 #include <unistd.h>
 #include<cstdio>
 #include<cstdlib>
 #include<ctime>
 #include <utility>
-#include <string>
+#include <string.h>
+#include<bcm2835.h>
+
+#include"../../../Library/easy_v1/Glcd.h"
+#include"../../../Library/easy_v1/FrameBuffer/framebuffer.h"
+
 using namespace std;
 
-#define TIMEOUT 10 //キーボード入力タイムアウト ms
-#define WAITTIME 20 //TIMEOUT * 1ms
+
+#define SW1 RPI_BPLUS_GPIO_J8_03 
+#define SW2 RPI_BPLUS_GPIO_J8_05 
+#define SW3 RPI_BPLUS_GPIO_J8_07 
+#define SW4 RPI_BPLUS_GPIO_J8_10 
+
+#define LCD_BLOCK_W 5
+#define LCD_BLOCK_H 5
+
+Glcd *lcd;
+char windowbuffer[128*128*3];
+
+
+#define WAITTIME 5
+#define SLEEPTIME 50000 //us
 
 #define NEXT_BLOCK_X 13
 #define NEXT_BLOCK_Y 0
@@ -17,7 +34,7 @@ using namespace std;
 #define SCORE_Y 20
 
 #define MAP_X (10+2) //文字　壁2つ
-#define MAP_Y (8+1+5) //行　下ガード＋未表示領域
+#define MAP_Y (19+1+5) //行　下ガード＋未表示領域
 #define MAP_NOT_SHOW_NUM 5
 #define BLOCK_H_W 5
 #define BLOCK_NUM 7
@@ -67,6 +84,12 @@ char block_data[BLOCK_NUM][5][5]=
      {0,0,0,0,0}
     },
   };
+
+enum Colors{Black,White,Red,Green,Blue,Yellow,Cyan,Magenta,Pink};
+unsigned char RGBColor[9][3]
+{
+  {0,0,0},{55,55,55},{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{247,171,166}
+};
 
 enum Direction{UP,DOWN,RIGHT,LEFT};
 
@@ -162,29 +185,55 @@ typedef struct block
   }
 }block;
 
+
+void put_window()
+{
+  lcd->SendData_RGB666(windowbuffer,128*128*3);
+}
+
+bool draw_rect(int x,int y,int w,int h,unsigned char *rgb)
+{
+  x*=LCD_BLOCK_W+1;
+  y*=LCD_BLOCK_H+1;
+  if(x>=0 && y>=0 && x+w<=128 && y+h<=128)
+    {
+      int i,j;
+      for(i=y;i<y+h;i++)
+	for(j=x*3;j<(x+w)*3;j+=3)
+	  {
+	    memcpy(windowbuffer+j+128*i*3,rgb,3);
+	  }
+      return false;
+    }
+  return true;
+}
+
+void fill_buffer(int color)
+{
+  draw_rect(0,0,128,128,RGBColor[color]);
+}
+
 void show_map(char map[MAP_Y][MAP_X])
 {
   int x,y;
   for(y=0;y<MAP_Y-MAP_NOT_SHOW_NUM;y++)
     for(x=0;x<MAP_X;x++){
-      attrset(COLOR_PAIR(map[y+MAP_NOT_SHOW_NUM][x]));
-      mvaddstr(y,x," ");
+      draw_rect(x,y,LCD_BLOCK_W,LCD_BLOCK_H,RGBColor[map[y+MAP_NOT_SHOW_NUM][x]]);
     }
 }
+
 void show_map(block *myblock,char map[MAP_Y][MAP_X])
 {
   int x,y;
   for(y=0;y<MAP_Y-MAP_NOT_SHOW_NUM;y++)
     for(x=0;x<MAP_X;x++){
-      attrset(COLOR_PAIR(map[y+MAP_NOT_SHOW_NUM][x]));
-      mvaddstr(y,x," ");
+      draw_rect(x,y,LCD_BLOCK_W,LCD_BLOCK_H,RGBColor[map[y+MAP_NOT_SHOW_NUM][x]]);      
     }
 
   for(y=0;y<BLOCK_H_W;y++)
     for(x=0;x<BLOCK_H_W;x++)
       if(myblock->data[y][x]!=0 && myblock->point.second-MAP_NOT_SHOW_NUM+y>=0){
-	attrset(COLOR_PAIR(myblock->data[y][x]));
-	mvaddstr(myblock->point.second-MAP_NOT_SHOW_NUM+y,myblock->point.first+x," ");
+	draw_rect(myblock->point.first+x,myblock->point.second-MAP_NOT_SHOW_NUM+y,LCD_BLOCK_W,LCD_BLOCK_H,RGBColor[myblock->data[y][x]]);
       }
 }
 
@@ -194,44 +243,21 @@ void show_nextblock(int block_num)
   for(y=0;y<BLOCK_H_W;y++)
     for(x=0;x<BLOCK_H_W;x++)
 	{
-	  attrset(COLOR_PAIR(block_data[block_num][y][x]));
-	  mvaddstr(y+NEXT_BLOCK_Y,x+NEXT_BLOCK_X," ");
+	  draw_rect(x+NEXT_BLOCK_X,y+NEXT_BLOCK_Y,LCD_BLOCK_W,LCD_BLOCK_H,RGBColor[block_data[block_num][y][x]]);      
 	}
 }
 
 void show_score(int score)
 {
-  attrset(COLOR_PAIR(0));
-  mvprintw(SCORE_Y,SCORE_X,"SCORE:%d",score);
+  //attrset(COLOR_PAIR(0));
+  //mvprintw(SCORE_Y,SCORE_X,"SCORE:%d",score);
+  return ;
 }
 
-void curses_init()
-{
-  initscr();//window初期化
-  noecho();//キー入力を表示しない
-  cbreak();//キー入力をすぐに受け付ける
-  curs_set(0);//カーソル非表示
-  
-  start_color();//カラーの初期化？
-  /*色ペアの設定　(番号,前景色,背景色)
-    0は前白,後黒になってるらしい*/
-  init_pair(1,COLOR_BLACK,COLOR_WHITE);
-  init_pair(2, COLOR_BLACK, COLOR_RED);
-  init_pair(3, COLOR_BLACK, COLOR_GREEN);
-  init_pair(4,COLOR_BLACK,COLOR_BLUE);
-  init_pair(5,COLOR_BLACK,COLOR_YELLOW);
-  init_pair(6,COLOR_BLACK,COLOR_CYAN);
-  init_pair(7,COLOR_BLACK,COLOR_MAGENTA);
-  init_pair(8,COLOR_BLACK,COLOR_BLUE);
-  
-  bkgd(COLOR_PAIR(0));//ターミナルの背景黒、文字白
-  wtimeout(stdscr,TIMEOUT);//getchのタイムアウト設定
-  keypad(stdscr, TRUE); //矢印キー使用する
-}  
+
 
 int init()
 {
-  curses_init();
   srand(time(NULL));//乱数列初期化
   return 0;
 }
@@ -242,23 +268,32 @@ int init()
 */
 bool key_input(block *myblock,char map[MAP_Y][MAP_X])
 {
-  int keyinput;
-  keyinput=getch();
-  switch(keyinput){
-  case KEY_RIGHT:
-    myblock->move(RIGHT,map);break;
-  case KEY_LEFT:
-    myblock->move(LEFT,map);break;
-  case KEY_UP:
-    myblock->rotate(LEFT,map);break;
-  case KEY_DOWN:
-    myblock->move(DOWN,map);break;
-  case 'c':
-    endwin();
-    exit(0);
-  default :return false;
-  }
-  return true;
+  char keyinput=0;
+  if(!bcm2835_gpio_lev(SW1))keyinput='s';
+  if(!bcm2835_gpio_lev(SW2))keyinput='a';
+  if(!bcm2835_gpio_lev(SW3))keyinput='w';
+  if(!bcm2835_gpio_lev(SW4))keyinput='z';
+
+  if(keyinput)
+    {
+      switch(keyinput){
+      case 's':
+	myblock->move(RIGHT,map);break;
+      case 'a':
+	myblock->move(LEFT,map);break;
+      case 'w':
+	myblock->rotate(LEFT,map);break;
+      case 'z':
+	myblock->move(DOWN,map);break;
+      case 'c':
+      case 'q':
+	lcd->MySemop(false);
+	exit(0);
+      default :return false;
+      }
+      return true;
+    }
+  return false;
 }
 
 void lock_myblock(block *myblock,char map[MAP_Y][MAP_X])
@@ -315,10 +350,12 @@ int play(int difficulty)
 
   while(true)
     {
+      fill_buffer(Black);
       for(int i=0;i<WAITTIME-difficulty;i++)
 	{
 	  key_input(&myblock,map);
 	  //タイム追加
+	  usleep(SLEEPTIME);
 	}
       if(myblock.move(DOWN,map)==false){
 	//下に落とせなかったら固定
@@ -332,18 +369,35 @@ int play(int difficulty)
 	next_myblock_num=rand()%BLOCK_NUM;
       }
       score+=delete_lines(map)*10;
+
       show_map(&myblock,map);
+
       show_nextblock(next_myblock_num);
       show_score(score);
+      put_window();
     }
 }
 
+
+
+
 int main()
 {
-
-  char nextblock;
-
+  bcm2835_init();
+  lcd=new Glcd;
+  //return 0;
+  bcm2835_gpio_fsel(SW1, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW2, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW3, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW4, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_set_pud(SW1, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW2, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW3, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW4, BCM2835_GPIO_PUD_UP);
+  lcd->MySemop(true);
   init();
   play(0);
-  endwin();
+  lcd->MySemop(false);
+  delete lcd;
+  return 0;
 }

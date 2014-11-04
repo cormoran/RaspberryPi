@@ -17,8 +17,8 @@ using namespace std;
 #define rep(i,j) for(i=0;i<j;i++)
 #define TIMEOUT 10 //キーボード入力タイムアウト ms
 #define WAITTIME 20 //TIMEOUT * 1ms
-#define MAP_W 50
-#define MAP_H 50
+#define MAP_W 10
+#define MAP_H 10
 bool map[MAP_H][MAP_W];
 
 void show_map()
