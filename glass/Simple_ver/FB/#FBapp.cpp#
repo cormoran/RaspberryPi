@@ -24,11 +24,9 @@ int main()
 {
   Glcd lcd;
   gl_lcd::framebuffer fb;
-  bcm2835_init();
 
   while(1)
     {
-      if(!bcm2835_gpio_lev(SW_g))end();
       lcd.SendData_RGB565(fb.GetFrameAddress(),128*128*2);
       usleep(50000);//50ms
     }

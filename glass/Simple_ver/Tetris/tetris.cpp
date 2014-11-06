@@ -11,11 +11,12 @@
 
 using namespace std;
 
+#define SW_g RPI_BPLUS_GPIO_J8_03//green 
+#define SW_b1 RPI_BPLUS_GPIO_J8_05 //blue1
+#define SW_b2 RPI_BPLUS_GPIO_J8_07 //blue2
+#define SW_w1 RPI_BPLUS_GPIO_J8_11 //white1
+#define SW_w2 RPI_BPLUS_GPIO_J8_12 //white2
 
-#define SW1 RPI_BPLUS_GPIO_J8_03 
-#define SW2 RPI_BPLUS_GPIO_J8_05 
-#define SW3 RPI_BPLUS_GPIO_J8_07 
-#define SW4 RPI_BPLUS_GPIO_J8_10 
 
 #define LCD_BLOCK_W 5
 #define LCD_BLOCK_H 5
@@ -24,8 +25,8 @@ Glcd *lcd;
 char windowbuffer[128*128*3];
 
 
-#define WAITTIME 5
-#define SLEEPTIME 50000 //us
+#define WAITTIME 2
+#define SLEEPTIME 100000 //us
 
 #define NEXT_BLOCK_X 13
 #define NEXT_BLOCK_Y 0
@@ -254,7 +255,27 @@ void show_score(int score)
   return ;
 }
 
-
+void game_pause()
+{
+  while(!bcm2835_gpio_lev(SW_g));
+  usleep(500000);
+  while(true)
+    {
+      usleep(100000);
+      if(!bcm2835_gpio_lev(SW_b1))break;
+      if(!bcm2835_gpio_lev(SW_b2))break;
+      if(!bcm2835_gpio_lev(SW_w1))break;
+      if(!bcm2835_gpio_lev(SW_w2))break;
+      if(!bcm2835_gpio_lev(SW_g))
+	{
+	  //end
+	  lcd->MySemop(false);
+	  delete lcd;
+	  exit(0);
+	}
+    }
+  return;
+}
 
 int init()
 {
@@ -266,13 +287,14 @@ int init()
   キー入力を反映する関数
   入力がなければfalse
 */
-bool key_input(block *myblock,char map[MAP_Y][MAP_X])
+char key_input(block *myblock,char map[MAP_Y][MAP_X])
 {
   char keyinput=0;
-  if(!bcm2835_gpio_lev(SW1))keyinput='s';
-  if(!bcm2835_gpio_lev(SW2))keyinput='a';
-  if(!bcm2835_gpio_lev(SW3))keyinput='w';
-  if(!bcm2835_gpio_lev(SW4))keyinput='z';
+  if(!bcm2835_gpio_lev(SW_b1))keyinput='s';
+  else if(!bcm2835_gpio_lev(SW_b2))keyinput='a';
+  if(!bcm2835_gpio_lev(SW_w1))keyinput='w';
+  else if(!bcm2835_gpio_lev(SW_w2))keyinput='z';
+  if(!bcm2835_gpio_lev(SW_g))keyinput='p';
 
   if(keyinput)
     {
@@ -285,11 +307,10 @@ bool key_input(block *myblock,char map[MAP_Y][MAP_X])
 	myblock->rotate(LEFT,map);break;
       case 'z':
 	myblock->move(DOWN,map);break;
-      case 'c':
-      case 'q':
-	lcd->MySemop(false);
-	exit(0);
-      default :return false;
+      case 'p':
+	game_pause();break;
+      default:
+	return false;
       }
       return true;
     }
@@ -385,15 +406,19 @@ int main()
 {
   bcm2835_init();
   lcd=new Glcd;
-  //return 0;
-  bcm2835_gpio_fsel(SW1, BCM2835_GPIO_FSEL_INPT);
-  bcm2835_gpio_fsel(SW2, BCM2835_GPIO_FSEL_INPT);
-  bcm2835_gpio_fsel(SW3, BCM2835_GPIO_FSEL_INPT);
-  bcm2835_gpio_fsel(SW4, BCM2835_GPIO_FSEL_INPT);
-  bcm2835_gpio_set_pud(SW1, BCM2835_GPIO_PUD_UP);
-  bcm2835_gpio_set_pud(SW2, BCM2835_GPIO_PUD_UP);
-  bcm2835_gpio_set_pud(SW3, BCM2835_GPIO_PUD_UP);
-  bcm2835_gpio_set_pud(SW4, BCM2835_GPIO_PUD_UP);
+
+
+  bcm2835_gpio_fsel(SW_g, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW_w1, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW_w2, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW_b1, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_fsel(SW_b2, BCM2835_GPIO_FSEL_INPT);
+  bcm2835_gpio_set_pud(SW_g, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW_w1, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW_w2, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW_b1, BCM2835_GPIO_PUD_UP);
+  bcm2835_gpio_set_pud(SW_b2, BCM2835_GPIO_PUD_UP);
+
   lcd->MySemop(true);
   init();
   play(0);

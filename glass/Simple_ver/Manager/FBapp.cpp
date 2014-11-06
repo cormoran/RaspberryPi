@@ -1,5 +1,5 @@
-#include"Glcd.h"
-#include"FrameBuffer/framebuffer.h"
+#include"../../../Library/easy_v1/Glcd.h"
+#include"../../../Library/easy_v1/FrameBuffer/framebuffer.h"
 #include<unistd.h>
 #include<iostream>
 #include<cstdio>

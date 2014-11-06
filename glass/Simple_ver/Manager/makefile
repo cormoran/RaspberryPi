@@ -1,8 +1,8 @@
 .PHONY:all
-all:tetris.out
+all:Manager.out
 
-tetris.out:tetris.cpp Glcd.o M014C9163SPI.o framebuffer.o
-	g++ -Wall -o tetris.out tetris.cpp Glcd.o M014C9163SPI.o framebuffer.o -lbcm2835
+Manager.out:Manager.cpp Glcd.o M014C9163SPI.o framebuffer.o
+	g++ -Wall -o Manager.out Manager.cpp Glcd.o M014C9163SPI.o framebuffer.o -lbcm2835
 
 Glcd.o : ../../../Library/easy_v1/Glcd.cpp
 	g++ -Wall -c ../../../Library/easy_v1/Glcd.cpp -lbcm2835
